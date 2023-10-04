@@ -8,7 +8,7 @@ blackjack = "11111111111111111111111111111111"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
+cluster = "localnet"
 wallet = "/home/dev/.config/solana/id.json"
 
 [scripts]
