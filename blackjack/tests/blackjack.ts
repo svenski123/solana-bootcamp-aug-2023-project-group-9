@@ -52,6 +52,13 @@ describe("blackjack", () => {
 	console.log("Your transaction signature", tx);
     });
 
+    it("Is checked!", async () => {
+	const tx = await program.methods.check()
+	    .accounts({game: game.publicKey})
+	    .rpc();
+	console.log("Your transaction signature", tx);
+    });
+
     it("Is hit!", async () => {
 	const tx = await program.methods.hit()
 	    .accounts({game: game.publicKey,
@@ -62,12 +69,26 @@ describe("blackjack", () => {
 	console.log("Your transaction signature", tx);
     });
 
+    it("Is checked!", async () => {
+	const tx = await program.methods.check()
+	    .accounts({game: game.publicKey})
+	    .rpc();
+	console.log("Your transaction signature", tx);
+    });
+
     it("Is stand!", async () => {
 	const tx = await program.methods.stand()
 	    .accounts({game: game.publicKey,
 		       player: player.publicKey,
 		       slotHashes: SYSVAR_SLOT_HASHES_PUBKEY})
 	    .signers([player])
+	    .rpc();
+	console.log("Your transaction signature", tx);
+    });
+
+    it("Is checked!", async () => {
+	const tx = await program.methods.check()
+	    .accounts({game: game.publicKey})
 	    .rpc();
 	console.log("Your transaction signature", tx);
     });
