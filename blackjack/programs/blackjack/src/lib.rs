@@ -160,9 +160,13 @@ pub mod blackjack {
 
     pub fn check(ctx: Context<Check>) -> Result<()> {
 	let game = &ctx.accounts.game;
+	let player_hand = &game.player_hand[0..game.player_hand_size as usize];
+	let dealer_hand = &game.dealer_hand[0..game.dealer_hand_size as usize];
+	msg!("[check] player_hand: {:?}", player_hand);
+	msg!("[check] dealer_hand: {:?}", dealer_hand);
 	let (player_hi, player_lo) = calc_hi_lo_score(&game.player_hand[0..game.player_hand_size as usize]);
 	let (dealer_hi, dealer_lo) = calc_hi_lo_score(&game.dealer_hand[0..game.dealer_hand_size as usize]);
-	msg!("check: plo:{} phi:{} dlo:{} dhi:{}", player_lo, player_hi, dealer_lo, dealer_hi);
+	msg!("[check] player lo:{} hi:{} dealer lo:{} hi:{}", player_lo, player_hi, dealer_lo, dealer_hi);
         Ok(())
     }
 }
