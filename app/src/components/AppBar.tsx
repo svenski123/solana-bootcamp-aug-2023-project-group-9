@@ -2,7 +2,7 @@ import dynamic from "next/dynamic";
 import React, { useEffect, useState } from "react";
 import { useAutoConnect } from "../contexts/AutoConnectProvider";
 import NetworkSwitcher from "./NetworkSwitcher";
-import { RequestAirdrop } from '../components/RequestAirdrop';
+import { RequestAirdrop } from "../components/RequestAirdrop";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import useUserSOLBalanceStore from "../stores/useUserSOLBalanceStore";
 
@@ -35,25 +35,21 @@ export const AppBar: React.FC = () => {
           <div className="hidden sm:inline w-22 h-22 md:p-2 ml-10">
             <h1 className="text-4xl">Solana Blackjack</h1>
           </div>
-          <WalletMultiButtonDynamic className="btn-ghost btn-sm relative flex md:hidden text-lg " />
         </div>
 
         {/* Nav Links */}
         {/* Wallet & Settings */}
         <div className="navbar-end">
-
           <div className="md:inline-flex flex-row align-items-center justify-center gap-6">
             <RequestAirdrop />
-            {wallet &&
-            <div className="flex flex-row align-items-center justify-center text-2xl text-slate-300 my-2">
-              <div>
-              {(balance || 0).toLocaleString()}
+            {wallet && (
+              <div className="flex flex-row items-center justify-center text-2xl text-slate-300 my-2">
+                <div className="text-center">
+                  {(balance || 0).toLocaleString()}
+                </div>
+                <div className="text-slate-600 ml-2">SOL</div>
               </div>
-              <div className='text-slate-600 ml-2'>
-              SOL
-              </div>
-            </div>
-            }
+            )}
           </div>
 
           <div className="hidden md:inline-flex align-items-center justify-items gap-6">
