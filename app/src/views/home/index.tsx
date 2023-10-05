@@ -73,7 +73,7 @@ export const HomeView: FC = ({}) => {
 	    const signature = await program.methods
 		.initialize()
 		.accounts({ game: game.publicKey, player: wallet.publicKey })
-		.signer7s([game])
+		.signers([game])
 		.rpc();
 
 	    console.log("New Game! Signature:", signature);

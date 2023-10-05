@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_lang::solana_program::{hash,slot_hashes,sysvar,clock::Slot};
 use core::mem;
 
-declare_id!("11111111111111111111111111111111");
+declare_id!("7Lb6TCQ967wUS74Wva6U1pnVWGDMXMohPExWUNjwP1Vf");
 
 fn get_rand_u8s(clock: &Clock, slot: u64, hash: [u8; 32]) -> [u8; 32] {
     const _: () = assert!(mem::size_of::<Clock>() == 40);
@@ -62,6 +62,17 @@ fn calc_hi_lo_score(cards: &[u8]) -> (u8, u8) {
     }
 }
 
+pub fn log_game_state(game: &Game) {
+    let player_hand = &game.player_hand[0..game.player_hand_size as usize];
+    let dealer_hand = &game.dealer_hand[0..game.dealer_hand_size as usize];
+    let (player_hi, player_lo) = calc_hi_lo_score(&game.player_hand[0..game.player_hand_size as usize]);
+    let (dealer_hi, dealer_lo) = calc_hi_lo_score(&game.dealer_hand[0..game.dealer_hand_size as usize]);
+    msg!("[check] player_hand: {:?}", player_hand);
+    msg!("[check] dealer_hand: {:?}", dealer_hand);
+    msg!("[check] player lo:{} hi:{} dealer lo:{} hi:{}", player_lo, player_hi, dealer_lo, dealer_hi);
+    msg!("[check] deck:{:?}", game.deck);
+}
+
 #[error_code]
 pub enum BlackJackError {
     #[msg("num_decks must be between one and eight")]
@@ -99,6 +110,7 @@ pub mod blackjack {
         game.player = ctx.accounts.player.key();
 	assert_eq!(0, game.player_hand_size);
 	assert_eq!(0, game.dealer_hand_size);
+	log_game_state(game);
         Ok(())
     }
 
@@ -117,6 +129,7 @@ pub mod blackjack {
 	game.player_hand[1] = select_card(game, seeds[2]).unwrap();
 	game.dealer_hand_size = 1;
 	game.player_hand_size = 2;
+	log_game_state(game);
         Ok(())
     }
 
@@ -131,6 +144,7 @@ pub mod blackjack {
 	let i = game.player_hand_size as usize;
 	game.player_hand[i] = select_card(game, seeds[0]).unwrap();
 	game.player_hand_size += 1;
+	log_game_state(game);
         Ok(())
     }
 
@@ -151,22 +165,19 @@ pub mod blackjack {
 		break
 	    }
 	}
+	log_game_state(game);
         Ok(())
     }
 
-    pub fn close(_ctx: Context<Close>) -> Result<()> {
+    pub fn close(ctx: Context<Close>) -> Result<()> {
+	let game = &mut ctx.accounts.game;
+	log_game_state(game);
         Ok(())
     }
 
     pub fn check(ctx: Context<Check>) -> Result<()> {
 	let game = &ctx.accounts.game;
-	let player_hand = &game.player_hand[0..game.player_hand_size as usize];
-	let dealer_hand = &game.dealer_hand[0..game.dealer_hand_size as usize];
-	msg!("[check] player_hand: {:?}", player_hand);
-	msg!("[check] dealer_hand: {:?}", dealer_hand);
-	let (player_hi, player_lo) = calc_hi_lo_score(&game.player_hand[0..game.player_hand_size as usize]);
-	let (dealer_hi, dealer_lo) = calc_hi_lo_score(&game.dealer_hand[0..game.dealer_hand_size as usize]);
-	msg!("[check] player lo:{} hi:{} dealer lo:{} hi:{}", player_lo, player_hi, dealer_lo, dealer_hi);
+	log_game_state(game);
         Ok(())
     }
 }
