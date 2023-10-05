@@ -5,6 +5,7 @@ import { FC, useEffect, useMemo, useState } from "react";
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import {
+  PublicKey,
   Keypair,
   TransactionSignature,
   SYSVAR_SLOT_HASHES_PUBKEY,
@@ -12,20 +13,23 @@ import {
 
 // Wallet
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
+import { WalletNotConnectedError } from '@solana/wallet-adapter-base';
 
 import { Blackjack } from "../../types/blackjack";
 import IDL from "../../utils/blackjack.json";
 import { notify } from "../../utils/notifications";
-import { OPTS, PROGRAM_ID } from "utils/connection";
+import { OPTS } from "utils/connection";
 
 // Store
 import useUserSOLBalanceStore from "../../stores/useUserSOLBalanceStore";
+
+const PROGRAM_ID = new PublicKey(IDL.metadata.address);
 
 export const HomeView: FC = ({}) => {
   const [playerScore, setPlayerScore] = useState(0);
   const [dealerScore, setDealerScore] = useState(0);
   const [gameState, setGameState] = useState();
-  const [gameKeypair, setGameKeypair] = useState<Keypair>();
+  const [gameKeypair, setGameKeypair] = useState<Keypair>(null);
   const [playerKeypair, setPlayerKeypair] = useState<Keypair>();
   const [winnerText, setWinnerText] = useState("");
 
@@ -55,164 +59,201 @@ export const HomeView: FC = ({}) => {
     }
   };
 
-  const createNewGame = async () => {
-    const game = anchor.web3.Keypair.generate();
-    const player = anchor.web3.Keypair.generate();
-    setGameKeypair(game);
-    setPlayerKeypair(player);
-    console.log(game);
-    console.log(player);
+    const createNewGame = async () => {
+	console.log("[createNewGame]:", gameKeypair);
 
-    let signature: TransactionSignature = "";
-    try {
-      const signature = await program.methods
-        .initialize()
-        .accounts({ game: game.publicKey, player: player.publicKey })
-        .signers([game, player])
-        .rpc();
-      console.log("New Game! Signature:", signature);
-      notify({
-        type: "success",
-        message: "New game created!",
-        txid: signature,
-      });
-    } catch (error) {
-      console.log(error);
-      notify({
-        type: "error",
-        message: `Unable to start new Game`,
-        description: error?.message,
-        txid: signature,
-      });
-    }
-  };
+	let signature: TransactionSignature = "";
+	try {
+	    if (!wallet.publicKey) throw new WalletNotConnectedError();
+	    if (gameKeypair !== null) throw { message: "***Game already created***: " + gameKeypair.publicKey };
 
-  const deal = async () => {
-    let signature: TransactionSignature = "";
-    try {
-      const signature = await program.methods
-        .deal(1)
-        .accounts({
-          game: gameKeypair.publicKey,
-          player: playerKeypair.publicKey,
-          slotHashes: SYSVAR_SLOT_HASHES_PUBKEY,
-        })
-        .signers([playerKeypair])
-        .rpc();
-      notify({ type: "success", message: "Cards dealt!", txid: signature });
-      console.log("Cards dealt. Signature:", signature);
-    } catch (error) {
-      console.log(error);
-      notify({
-        type: "error",
-        message: `Unable to deal`,
-        description: error?.message,
-        txid: signature,
-      });
-    }
-  };
+	    let game = anchor.web3.Keypair.generate();
+	    setGameKeypair(game);
 
-  const checkScore = async () => {
-    // RPC call to check
-    let signature: TransactionSignature = "";
-    try {
-      const signature = await program.methods
-        .check()
-        .accounts({ game: gameKeypair.publicKey })
-        .rpc();
-      notify({ type: "success", message: "Cards checked!", txid: signature });
-      console.log("Cards checked. Signature:", signature);
-    } catch (error) {
-      console.log(error);
-      notify({
-        type: "error",
-        message: `Unable to check cards`,
-        description: error?.message,
-        txid: signature,
-      });
-    }
+	    const signature = await program.methods
+		.initialize()
+		.accounts({ game: game.publicKey, player: wallet.publicKey })
+		.signer7s([game])
+		.rpc();
 
-    // Should set game state
-  };
+	    console.log("New Game! Signature:", signature);
+	    notify({
+		type: "success",
+		message: "New game created!",
+		txid: signature,
+	    });
+	} catch (error) {
+	    console.log(error);
+	    notify({
+		type: "error",
+		message: `Unable to start new Game`,
+		description: error?.message,
+		txid: signature,
+	    });
+	}
+    };
 
-  const hit = async () => {
-    // RPC call to hit
-    let signature: TransactionSignature = "";
-    try {
-      const signature = await program.methods
-        .hit()
-        .accounts({
-          game: gameKeypair.publicKey,
-          player: playerKeypair.publicKey,
-          slotHashes: SYSVAR_SLOT_HASHES_PUBKEY,
-        })
-        .signers([playerKeypair])
-        .rpc();
-      notify({ type: "success", message: "Hit!", txid: signature });
-      console.log("Hit successful. Signature:", signature);
-    } catch (error) {
-      console.log(error);
-      notify({
-        type: "error",
-        message: `Unable to hit`,
-        description: error?.message,
-        txid: signature,
-      });
-    }
+    const deal = async () => {
+	console.log("[deal]:", gameKeypair);
 
-    // Should call check to look at gamestate and update scores (react state)
-  };
+	let signature: TransactionSignature = "";
+	try {
+	    if (!wallet.publicKey) throw new WalletNotConnectedError();
 
-  const stand = async () => {
-    // RPC call to stand
-    let signature: TransactionSignature = "";
-    try {
-      const signature = await program.methods
-        .stand()
-        .accounts({
-          game: gameKeypair.publicKey,
-          player: playerKeypair.publicKey,
-          slotHashes: SYSVAR_SLOT_HASHES_PUBKEY,
-        })
-        .signers([playerKeypair])
-        .rpc();
-      notify({ type: "success", message: "Stand!", txid: signature });
-      console.log("Stand successful. Signature:", signature);
-    } catch (error) {
-      console.log(error);
-      notify({
-        type: "error",
-        message: `Unable to stand`,
-        description: error?.message,
-        txid: signature,
-      });
-    }
-  };
+	    let game = gameKeypair;
+	    if (game === null) throw { message: "***No game exists***" };
 
-  const close = async () => {
-    // RPC call to close
-    let signature: TransactionSignature = "";
-    try {
-      const signature = await program.methods
-        .close()
-        .accounts({
-          game: gameKeypair.publicKey,
-          player: playerKeypair.publicKey,
-        })
-        .signers([playerKeypair])
-        .rpc();
-      notify({ type: "success", message: "Game ended!", txid: signature });
-      console.log("Close successful. Signature:", signature);
-    } catch (error) {
-      console.log(error);
-      notify({
-        type: "error",
-        message: `Unable to close game`,
-        description: error?.message,
-        txid: signature,
-      });
-    }
-  };
+	    const signature = await program.methods
+		.deal(1)
+		.accounts({
+		    game: game.publicKey,
+		    player: wallet.publicKey,
+		    slotHashes: SYSVAR_SLOT_HASHES_PUBKEY,
+		})
+		.rpc();
+	    notify({ type: "success", message: "Cards dealt!", txid: signature });
+	    console.log("Cards dealt. Signature:", signature);
+	} catch (error) {
+	    console.log(error);
+	    notify({
+		type: "error",
+		message: `Unable to deal`,
+		description: error?.message,
+		txid: signature,
+	    });
+	}
+    };
+
+    const checkScore = async () => {
+	// RPC call to check
+	console.log("[checkScore]:", gameKeypair);
+	let signature: TransactionSignature = "";
+	try {
+	    if (!wallet.publicKey) throw new WalletNotConnectedError();
+
+	    let game = gameKeypair;
+	    if (game === null) throw { message: "***No game exists***" };
+
+	    const signature = await program.methods
+		.check()
+		.accounts({ game: gameKeypair.publicKey })
+		.rpc();
+	    notify({ type: "success", message: "Cards checked!", txid: signature });
+	    console.log("Cards checked. Signature:", signature);
+	} catch (error) {
+	    console.log(error);
+	    notify({
+		type: "error",
+		message: `Unable to check cards`,
+		description: error?.message,
+		txid: signature,
+	    });
+	}
+
+	// Should set game state
+    };
+
+    const hit = async () => {
+	// RPC call to hit
+	console.log("[deal]:", gameKeypair);
+	let signature: TransactionSignature = "";
+	try {
+	    if (!wallet.publicKey) throw new WalletNotConnectedError();
+
+	    let game = gameKeypair;
+	    if (game === null) throw { message: "***No game exists***" };
+
+	    const signature = await program.methods
+		.hit()
+		.accounts({
+		    game: game.publicKey,
+		    player: wallet.publicKey,
+		    slotHashes: SYSVAR_SLOT_HASHES_PUBKEY,
+		})
+		.rpc();
+	    notify({
+		type: "success",
+		message: "Hit!",
+		txid: signature,
+	    });
+	    console.log("Hit successful. Signature:", signature);
+	} catch (error) {
+	    console.log(error);
+	    notify({
+		type: "error",
+		message: `Unable to hit`,
+		description: error?.message,
+		txid: signature,
+	    });
+	}
+
+	// Should call check to look at gamestate and update scores (react state)
+    };
+
+    const stand = async () => {
+	// RPC call to stand
+	console.log("[stand]:", gameKeypair);
+	let signature: TransactionSignature = "";
+	try {
+	    if (!wallet.publicKey) throw new WalletNotConnectedError();
+
+	    let game = gameKeypair;
+	    if (game === null) throw { message: "***No game exists***" };
+
+	    const signature = await program.methods
+		.stand()
+		.accounts({
+		    game: game.publicKey,
+		    player: wallet.publicKey,
+		    slotHashes: SYSVAR_SLOT_HASHES_PUBKEY,
+		})
+		.rpc();
+	    notify({
+		type: "success",
+		message: "Stand!",
+		txid: signature,
+	    });
+	    console.log("Stand successful. Signature:", signature);
+	} catch (error) {
+	    console.log(error);
+	    notify({
+		type: "error",
+		message: `Unable to stand`,
+		description: error?.message,
+		txid: signature,
+	    });
+	}
+    };
+
+    const close = async () => {
+	// RPC call to close
+	console.log("[close]:", gameKeypair);
+	let signature: TransactionSignature = "";
+	try {
+	    if (!wallet.publicKey) throw new WalletNotConnectedError();
+
+	    let game = gameKeypair;
+	    if (game === null) throw { message: "***No game exists***" };
+
+	    const signature = await program.methods
+		.close()
+		.accounts({
+		    game: game.publicKey,
+		})
+		.rpc();
+	    notify({ type: "success", message: "Game closed!", txid: signature });
+	    console.log("Close successful. Signature:", signature);
+	} catch (error) {
+	    console.log(error);
+	    notify({
+		type: "error",
+		message: `Unable to close game`,
+		description: error?.message,
+		txid: signature,
+	    });
+	}
+	setGameKeypair(null);
+    };
 
   const winnerMessage = (
     <h1 className="absolute w-2/6 text-center text-8xl top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2">
