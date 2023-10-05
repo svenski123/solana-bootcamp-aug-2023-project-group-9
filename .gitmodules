@@ -1,0 +1,4 @@
+[submodule "solana-web3.js"]
+	path = solana-web3.js
+	url = https://github.com/svenski123/solana-web3.js
+	branch = localnet
