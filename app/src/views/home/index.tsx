@@ -38,7 +38,7 @@ export const HomeView: FC = ({}) => {
           Your score: {playerScore}
         </h1>
         <h1 className="w-2/6 text-5xl text-center">
-          Dealer's score: {dealerScore}
+          Dealer&apos;s score: {dealerScore}
         </h1>
         {winner && winnerMessage}
       </div>
